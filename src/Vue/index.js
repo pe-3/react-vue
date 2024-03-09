@@ -18,6 +18,63 @@ import Refs from "./refs";
 
 const VueContext = createContext();
 
+let currentInstance = null;
+
+const LifeHooks = {
+  beforeMount: "beforeMount",
+  mounted: "mounted",
+  beforeUpdate: "beforeUpdate",
+  updated: "updated",
+  beforeUnmount: "beforeUnmount",
+  unmounted: "unmounted",
+  errorCaptured: "errorCaptured",
+  renderTracked: "renderTracked",
+  renderTriggered: "renderTriggered",
+  activated: "activated",
+  deactivated: "deactivated",
+  serverPrefetch: "serverPrefetch"
+}
+
+export const onMounted = (cb) => currentInstance && currentInstance?.$on?.(LifeHooks.mounted, cb);
+export const onUpdated = (cb) => currentInstance && currentInstance?.$on?.(LifeHooks.updated, cb);
+export const onUnmounted = (cb) => currentInstance && currentInstance?.$on?.(LifeHooks.unmounted, cb);
+export const onBeforeMount = (cb) => currentInstance && currentInstance?.$on?.(LifeHooks.beforeMount, cb);
+export const onBeforeUpdate = (cb) => currentInstance && currentInstance?.$on?.(LifeHooks.beforeUpdate, cb);
+export const onBeforeUnmount = (cb) => currentInstance && currentInstance?.$on?.(LifeHooks.beforeUnmount, cb);
+export const onErrorCaptured = (cb) => currentInstance && currentInstance?.$on?.(LifeHooks.errorCaptured, cb);
+export const onRenderTracked = (cb) => currentInstance && currentInstance?.$on?.(LifeHooks.renderTracked, cb);
+export const onRenderTriggered = (cb) => currentInstance && currentInstance?.$on?.(LifeHooks.renderTriggered, cb);
+export const onActived = (cb) => currentInstance && currentInstance?.$on?.(LifeHooks.activated, cb);
+export const onDeactived = (cb) => currentInstance && currentInstance?.$on?.(LifeHooks.deactivated, cb);
+export const onSeverPrefetch = (cb) => currentInstance && currentInstance?.$on?.(LifeHooks.serverPrefetch, cb);
+
+export const getCurrentInstance = () => currentInstance;
+
+export const provide = (key, value) => {
+  if (!currentInstance) return console.error('你的 hooks 可能得在 Vue 组件的 setup 钩子中使用');
+  currentInstance.provider[key] = value;
+}
+export const inject = (key, defaultValue, asFactory) => {
+  if (!currentInstance) return console.error('你的 hooks 可能得在 Vue 组件的 setup 钩子中使用');
+
+  // 遍历祖先
+  let parent = currentInstance.$parent;
+  while (parent) {
+    if (parent.provider[key]) return parent.provider[key];
+    parent = parent.$parent;
+  }
+
+  // 没有找到，返回默认值
+  if (defaultValue) {
+    if(asFactory && typeof defaultValue === 'function') {
+      return defaultValue();
+    }
+    else {
+      return defaultValue;
+    }
+  }
+}
+
 const useVueInstance = (option) => {
   const [render, setRender] = useState(0);
   const rerender = () => setRender((pre) => pre + 1);
@@ -27,6 +84,16 @@ const useVueInstance = (option) => {
     option.defineProps,
     option.props
   );
+
+  Object.assign(
+    events,
+    Object.keys(option).reduce((events, key) => {
+      if(/^on[A-Z]/.test(key)) {
+        events[key.slice(2).toLowerCase()] = [option[key]];
+      }
+      return events;
+    }, ({}))
+  )
 
   const parent = useContext(VueContext) || null;
 
@@ -107,6 +174,9 @@ const useVueInstance = (option) => {
           `此 vm 非彼 vm，此 vm 只是 react 的 hooks 状态，通过在其上面运行响应式逻辑，来调动组件更新。这个 vm 是不管渲染链路的，只是单纯的响应式状态管理。`
         );
       }, // ok
+
+      // provide, inject
+      provider: markRaw({})
       // todo: 生命周期
     });
 
@@ -157,18 +227,40 @@ const useVueInstance = (option) => {
       }
     });
 
+    currentInstance = vm;
+
+    // life-hook: 挂载前
+    nextTick(() => {
+      vm.$emit(LifeHooks.beforeMount, vm);
+    });
 
     return vm;
   }, []);
 
   // 响应式 -> set -> rerender，react 和 vue 的交接点
   useEffect(() => {
-    nextTick(() => { 
-      // useEffect + nextTick，保证在 $el 赋值之后，这里真正挂载
-      watch(vm, rerender, {
-        deep: true,
-      }); 
+    // 挂载之后监听，开始
+    watch(vm, () => {
+      // life-hook: 更新前
+      vm.$emit(LifeHooks.beforeUpdate, vm);
+
+      rerender();
+
+      // life-hook: 更新了
+      setTimeout(() => {
+        vm.$emit(LifeHooks.updated, vm); 
+      });
+    }, {
+      deep: true,
     });
+
+    // life-hook: 挂载
+    vm.$emit(LifeHooks.mounted, vm);
+
+    // life-hook: 卸载
+    return () => {
+      vm.$emit(LifeHooks.unmounted);
+    }
   }, [])
 
   Object.assign(vm.$props, props);
@@ -177,18 +269,8 @@ const useVueInstance = (option) => {
   return vm;
 };
 
-const useMount = (vm) => {
-  const rootRef = useRef();
-  useEffect(() => {
-    const $el = rootRef.current;
-    vm.$el = $el;
-  }, []);
-  return rootRef;
-};
-
 const Vue = forwardRef(function (option, ref) {
   const vm = useVueInstance(option);
-  const rootRef = useMount(vm);
 
   // 通过 ref 向外暴露 vm
   useImperativeHandle(ref, () => vm, []);
@@ -201,7 +283,7 @@ const Vue = forwardRef(function (option, ref) {
   return (
     <VueContext.Provider value={vm}>
       {React.cloneElement(option.template || option.children, {
-        ref: rootRef,
+        ref: (el) => vm.$el = el,
         vm,
       })}
     </VueContext.Provider>

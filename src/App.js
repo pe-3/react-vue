@@ -107,6 +107,12 @@ const App = (props) => (
         this.$children?.forEach((child) => console.log(child.$el));
       },
     }}
+    onMounted={(vm) => {
+      console.log('我滴 app 挂载了', vm.$el);
+    }}
+    onUpdated={(vm) => {
+      console.log('我滴 app 更新了', vm.$el);
+    }}
   >
     <Template />
   </Vue>
