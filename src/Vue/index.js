@@ -72,9 +72,9 @@ const useVueInstance = (option) => {
       $forceUpdate: rerender, // ok
       $mount: () => {
         throw new Error(
-          `此 vm 非彼 vm，此 vm 只是 react 的 hooks 状态，通过在其上面运行响应式逻辑，来调动组件更新。这个 vm 是不管渲染链路的，只是单纯的响应式状态管理。`
+          `不能调用 $mount 方法用于挂载，渲染还是基于 react，请走 react 的渲染链路`
         );
-      }, // ok
+      },
 
       // provide, inject
       provider: markRaw({})
