@@ -16,6 +16,12 @@ const Template = forwardRef(({ vm }, ref) => {
       </button>
       <p ref={$refs.set('count-render')}>{ count }</p>
       <button onClick={increment}>increment</button>
+      <Vue
+        name='child1'
+        ref={$refs.set('child1')}
+      >
+        <p>这是我的子组件</p>
+      </Vue>
     </div>
   );
 });
