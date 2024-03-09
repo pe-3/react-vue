@@ -20,6 +20,7 @@ import { LifeHooks, mountLifeHooks } from "./lifehooks";
 import mountEvents from "./events";
 import expand from "./expand";
 import buildVmTree from "./build-vm-tree";
+import compare from "./compare-vm";
 
 export const VueContext = createContext();
 
@@ -44,6 +45,8 @@ const useVueInstance = (option) => {
   mountLifeHooks(events, option);
 
   const parent = useContext(VueContext) || null;
+
+  const watcharr = useRef();
 
   const vm = useMemo(() => {
     const vm = reactive({
@@ -86,7 +89,7 @@ const useVueInstance = (option) => {
     buildVmTree(vm, parent);
 
     // 将 props，data，setup，methods 展开到 vm 上
-    expand(vm, {
+    watcharr.current = expand(vm, {
       props,
       attrs,
       data: option.data,
@@ -111,7 +114,7 @@ const useVueInstance = (option) => {
 
     nextTick(() => {
       // 挂载之后监听，开始
-      stop = watch(vm, () => {
+      const watchCallback = () => {
         // life-hook: 更新前
         vm.$emit(LifeHooks.beforeUpdate, vm);
         rerender();
@@ -119,9 +122,22 @@ const useVueInstance = (option) => {
         setTimeout(() => {
           vm.$emit(LifeHooks.updated, vm); 
         });
-      }, {
-        flush: 'sync'
+      }
+
+      // 监听 vm 身上的浅层属性
+      const stopvm = watch(vm, watchCallback, {
+        flush: 'sync',
+        deep: false
       });
+      // 监听 setup 里返回的 reactive 对象
+      const stopstate = watch(watcharr.current,watchCallback, {
+        flush: 'sync'
+      })
+
+      stop = () => {
+        stopvm();
+        stopstate();
+      }
 
       // life-hook: 挂载
       vm.$emit(LifeHooks.mounted, vm);
@@ -133,6 +149,10 @@ const useVueInstance = (option) => {
       vm.$emit(LifeHooks.unmounted);
     }
   }, [])
+
+  watch(() => vm.$option.children, () => {
+    console.log('变化了 children');
+  })
 
   Object.assign(vm.$props, props);
   Object.assign(vm.$attrs, attrs);

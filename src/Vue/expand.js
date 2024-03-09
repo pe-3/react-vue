@@ -1,4 +1,4 @@
-import { reactive, isRef, computed } from 'vue';
+import { reactive, isRef, computed, isReactive } from 'vue';
 
 export default function expand(vm, {
   props,
@@ -6,6 +6,7 @@ export default function expand(vm, {
   methods,
   setup
 }) {
+  const watcharr = []; // 额外需要监听的响应式对象
   const $props = reactive(props);
   const $data = reactive(typeof data === "function" ? data() : {});
 
@@ -30,6 +31,10 @@ export default function expand(vm, {
           set: (val) => (target[key] = val),
         });
       }
+
+      if (isReactive(target[key])) {
+        watcharr.push(target[key]);
+      }
     });
   };
 
@@ -53,4 +58,6 @@ export default function expand(vm, {
       vm[key] = methods[key].bind(vm);
     }
   });
+
+  return watcharr;
 }
