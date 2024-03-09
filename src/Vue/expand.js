@@ -1,0 +1,56 @@
+import { reactive, isRef, computed } from 'vue';
+
+export default function expand(vm, {
+  props,
+  data,
+  methods,
+  setup
+}) {
+  const $props = reactive(props);
+  const $data = reactive(typeof data === "function" ? data() : {});
+
+  Object.assign(vm, {
+    $props,
+    $data,
+  });
+
+  const $expand = (target, writeable = false) => {
+    if (target === null || typeof target !== "object") return;
+    Object.keys(target).forEach((key) => {
+      if (!writeable) {
+        // 对 ref 单独判断
+        if (isRef(target[key])) {
+          vm[key] = computed(() => target[key].value);
+        } else {
+          vm[key] = computed(() => target[key]);
+        }
+      } else {
+        vm[key] = computed({
+          get: () => target[key],
+          set: (val) => (target[key] = val),
+        });
+      }
+    });
+  };
+
+  // 展开 props、data、setup 到 vm 上
+  $expand($props);
+  $expand($data, true);
+  $expand(
+    typeof setup === "function"
+      ? setup(vm.$props, {
+          emit: vm.$emit,
+          slots: vm.$slots,
+          attrs: vm.$attrs,
+          expose: vm.$expose,
+        })
+      : null
+  );
+
+  // 展开 methods
+  Object.keys(methods).forEach((key) => {
+    if (typeof methods[key] === "function") {
+      vm[key] = methods[key].bind(vm);
+    }
+  });
+}

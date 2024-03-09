@@ -13,14 +13,15 @@ const RenderApp = () => {
         onChange={(e) => {
           console.log("改变了", e);
         }}
-        title={"这是一个 title"}
+        title={"这是一个 title, can you see me????"}
+        onAdd={() => {
+          console.log("添加了");
+        }}
       />
     </>
   );
 };
 
 root.render(
-  <StrictMode>
-    <RenderApp />
-  </StrictMode>
+  <RenderApp />   
 );
