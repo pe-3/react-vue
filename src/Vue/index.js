@@ -27,6 +27,8 @@ export const VueContext = createContext();
 export let currentInstance = null;
 export const getCurrentInstance = () => currentInstance;
 
+// todo: 热更新有大问题，需要整理一下更新逻辑，还有 react 的热更新逻辑
+
 const useReRender = (option) => {
   const [render, setRender] = useState(0);
   const rerender = () => setRender((pre) => pre + 1);
@@ -41,8 +43,6 @@ const useVueInstance = (option) => {
     option.defineProps,
     option.props
   );
-
-  mountLifeHooks(events, option);
 
   const parent = useContext(VueContext) || null;
 
@@ -83,8 +83,13 @@ const useVueInstance = (option) => {
       provider: markRaw({})
     });
 
+    // 设置当前渲染的 vm
+    currentInstance = vm;
+
     // 注册事件系统，events 是通过事先通过配置初始化好的事件对象
     mountEvents(vm, events);
+
+    mountLifeHooks(vm.$events, option);
 
     buildVmTree(vm, parent);
 
@@ -97,8 +102,6 @@ const useVueInstance = (option) => {
       setup: option.setup
     })
 
-    // 设置当前渲染的 vm
-    currentInstance = vm;
 
     // life-hook: 挂载前
     nextTick(() => {
@@ -106,7 +109,7 @@ const useVueInstance = (option) => {
     });
 
     return vm;
-  }, [option]);
+  }, []);
 
   // 响应式 -> set -> rerender，react 和 vue 的交接点
   useEffect(() => {
@@ -148,7 +151,7 @@ const useVueInstance = (option) => {
       stop(); // 卸载时，销毁对 vm 的监听
       vm.$emit(LifeHooks.unmounted);
     }
-  }, [])
+  }, [option])
 
   // todo: 属性消失或添加做处理
   // 稳定时候的处理 prod 模式下

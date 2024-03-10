@@ -31,9 +31,9 @@ export const onSeverPrefetch = (cb) => currentInstance && currentInstance?.$on?.
 export const mountLifeHooks = (events, option) => {
   Object.assign(
     events,
-    Object.keys(option).reduce((events, key) => {
-      if(/^on[A-Z]/.test(key)) {
-        events[key.slice(2).toLowerCase()] = [option[key]];
+    Object.keys(LifeHooks).reduce((events, hook) => {
+      if(typeof option[hook] === 'function') {
+        events[hook] = [option[hook].bind(currentInstance)];
       }
       return events;
     }, ({}))

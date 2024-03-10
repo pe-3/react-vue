@@ -1,50 +1,40 @@
-import { forwardRef } from "react";
-import { reactive } from 'vue';
-import Vue, { forwardVue } from "../Vue";
+import { forwardVue } from "../Vue";
+import { ref } from 'vue';
+import { inject } from "../Vue/provider";
 
-const MyInput = (props) => (
-  <Vue
-    name='MyInput'
-    defineProps={{
-      onChange: Function,
-    }}
-    props={props}
-    setup={(props, { emit }) => {
-      const state = reactive({
-        input: ''
-      });
+const MyInput = forwardVue(
+  {
+    name: 'myInput',
+    setup() {
+      const input = ref('');
       const changeInput = (e) => {
-        state.input = e.target.value;
-        emit('change', state.input);
+        input.value = e.target.value;
       }
+
+      const name = inject('name');
 
       return {
-        state,
+        name,
+        input,
         changeInput
       }
-    }}
-  >
-    <Template />
-  </Vue>
-);
+    }
+  },
+  ({ vm }, ref) => {
+    const { input, changeInput, name } = vm
 
-const Template = forwardRef(({ vm }, ref) => {
-
-  const {
-    state,
-    changeInput,
-  } = vm;
-
-  return (
-    <div ref={ref}>
-      <input
-        value={state.input}
-        onChange={changeInput}
-      />
-      { state.input }
-    </div>
-  );
-});
+    return (
+      <div ref={ref}>
+        { name }
+        <input
+          value={input}
+          onChange={changeInput}
+        />
+        { input }
+      </div>
+    )
+  }
+)
 
 export default MyInput;
 
@@ -63,20 +53,16 @@ export const MyInput2 = forwardVue(
       increment() {
         this.count++;
       },
-      decrement() {
-        this.count--;
-      }
     },
   },
   ({ vm }, ref) => {
-    const { count, increment, title, decrement } = vm
+    const { count, increment, title } = vm
 
     return (
       <div ref={ref}>
         <h1>{ title }</h1>
         <p>{ count }</p>
         <button onClick={increment}>increment</button>
-        <button onClick={decrement}>decrement</button>
       </div>
     )
   }
