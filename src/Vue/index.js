@@ -20,7 +20,7 @@ import { LifeHooks, mountLifeHooks } from "./lifehooks";
 import mountEvents from "./events";
 import expand from "./expand";
 import buildVmTree from "./build-vm-tree";
-import compare from "./compare-vm";
+import compare from "./compare";
 
 export const VueContext = createContext();
 
@@ -106,7 +106,7 @@ const useVueInstance = (option) => {
     });
 
     return vm;
-  }, []);
+  }, [option]);
 
   // 响应式 -> set -> rerender，react 和 vue 的交接点
   useEffect(() => {
@@ -130,7 +130,7 @@ const useVueInstance = (option) => {
         deep: false
       });
       // 监听 setup 里返回的 reactive 对象
-      const stopstate = watch(watcharr.current,watchCallback, {
+      const stopstate = watch(watcharr.current, watchCallback, {
         flush: 'sync'
       })
 
@@ -150,12 +150,21 @@ const useVueInstance = (option) => {
     }
   }, [])
 
-  watch(() => vm.$option.children, () => {
-    console.log('变化了 children');
-  })
-
-  Object.assign(vm.$props, props);
+  // todo: 属性消失或添加做处理
+  // 稳定时候的处理 prod 模式下
   Object.assign(vm.$attrs, attrs);
+
+  compare(vm.$props, props, {
+    onAdd(key) {
+      vm[key] = computed(() => vm.$props[key])
+    },
+    onDelete(key) {
+      delete vm[key];
+    },
+    onChange(key) {
+      vm.$props[key] = props[key]
+    }
+  })
 
   return vm;
 };
@@ -199,3 +208,25 @@ Vue.slot = ({ name = "default", children, ...args }) => {
 };
 
 export default Vue;
+
+// 语法糖出现
+export function forwardVue(
+  options,
+  template
+) {
+  const Template = forwardRef(template)
+
+  // 便携配置 props
+  const defineProps = options.props;
+  delete options.props;
+
+  return (props) => (
+    <Vue
+      props={props}
+      defineProps={defineProps}
+      {...options}
+    >
+      <Template />
+    </Vue>
+  )
+}

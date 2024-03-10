@@ -6,7 +6,8 @@ export default function expand(vm, {
   methods,
   setup
 }) {
-  const watcharr = []; // 额外需要监听的响应式对象
+  // 稳定的属性，编译好了之后，option 和 props 都不会再变化
+  const watcharr = [vm.$attrs]; // 额外需要监听的响应式对象
   const $props = reactive(props);
   const $data = reactive(typeof data === "function" ? data() : {});
 

@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import { reactive } from 'vue';
-import Vue from "../Vue";
+import Vue, { forwardVue } from "../Vue";
 
 const MyInput = (props) => (
   <Vue
@@ -47,3 +47,37 @@ const Template = forwardRef(({ vm }, ref) => {
 });
 
 export default MyInput;
+
+export const MyInput2 = forwardVue(
+  {
+    name: 'myInput2',
+    props: {
+      title: String
+    },
+    data() {
+      return {
+        count: 0
+      }
+    },
+    methods: {
+      increment() {
+        this.count++;
+      },
+      decrement() {
+        this.count--;
+      }
+    },
+  },
+  ({ vm }, ref) => {
+    const { count, increment, title, decrement } = vm
+
+    return (
+      <div ref={ref}>
+        <h1>{ title }</h1>
+        <p>{ count }</p>
+        <button onClick={increment}>increment</button>
+        <button onClick={decrement}>decrement</button>
+      </div>
+    )
+  }
+)

@@ -1,6 +1,6 @@
 import { forwardRef } from "react";
 import Vue from "./Vue";
-import MyInput from "./components/MyInput";
+import MyInput, { MyInput2 } from "./components/MyInput";
 
 const App = () => (
   <Vue
@@ -15,8 +15,11 @@ const Template = forwardRef((_, ref) => {
     <div ref={ref}>
       <MyInput
         placeholder='请输入你的名字'
-        clearOnSubmit
       />
+      <MyInput2
+        title='这是你的吗，啊，宝子'
+      />
+      <MyInput2/>
     </div>
   );
 });
