@@ -18,12 +18,6 @@ const App = forwardVue(
         <MyInput
           placeholder='请输入你的名字'
         />
-        <MyInput2
-          title='这是你的吗，啊，宝子'
-        />
-        <MyInput2
-          title='xxx'
-        />
       </div>
     );
   }

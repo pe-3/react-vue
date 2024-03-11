@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { inject } from "../Vue/provider";
 
 const MyInput = forwardVue(
+  // options 2.6 & 2.7
   {
     name: 'myInput',
     setup() {
@@ -10,7 +11,6 @@ const MyInput = forwardVue(
       const changeInput = (e) => {
         input.value = e.target.value;
       }
-
       const name = inject('name');
 
       return {
@@ -20,6 +20,7 @@ const MyInput = forwardVue(
       }
     }
   },
+  // template 
   ({ vm }, ref) => {
     const { input, changeInput, name } = vm
 
@@ -37,33 +38,3 @@ const MyInput = forwardVue(
 )
 
 export default MyInput;
-
-export const MyInput2 = forwardVue(
-  {
-    name: 'myInput2',
-    props: {
-      title: String
-    },
-    data() {
-      return {
-        count: 0
-      }
-    },
-    methods: {
-      increment() {
-        this.count++;
-      },
-    },
-  },
-  ({ vm }, ref) => {
-    const { count, increment, title } = vm
-
-    return (
-      <div ref={ref}>
-        <h1>{ title }</h1>
-        <p>{ count }</p>
-        <button onClick={increment}>increment</button>
-      </div>
-    )
-  }
-)
