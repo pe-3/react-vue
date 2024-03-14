@@ -22,7 +22,10 @@ export default function expand(vm, {
       if (!writeable) {
         // 对 ref 单独判断
         if (isRef(target[key])) {
-          vm[key] = computed(() => target[key].value);
+          vm[key] = computed({
+            get: () => target[key].value,
+            set: (val) => (target[key].value = val),
+          });
         } else {
           vm[key] = computed(() => target[key]);
         }

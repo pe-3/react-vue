@@ -23,6 +23,7 @@ import buildVmTree from "./build-vm-tree";
 import compare from "./compare";
 
 export const VueContext = createContext();
+export const IfContext = createContext();
 
 export let currentInstance = null;
 export const getCurrentInstance = () => currentInstance;
@@ -191,10 +192,15 @@ const Vue = forwardRef(function (option, ref) {
 
   return (
     <VueContext.Provider value={vm}>
-      {React.cloneElement(option.template || option.children, {
-        vm,
-        ref: rootRef
-      })}
+      <IfContext.Provider value={{
+        current: 0,
+        queue : []
+      }}>
+        {React.cloneElement(option.template || option.children, {
+          vm,
+          ref: rootRef
+        })}
+      </IfContext.Provider>
     </VueContext.Provider>
   );
 });
@@ -210,6 +216,44 @@ Vue.slot = ({ name = "default", children, ...args }) => {
   }
 };
 
+Vue.If = ({ when = true, children }) => {
+  const IfCtx = useContext(IfContext);
+  IfCtx.queue.push({
+    type: 'If',
+    when
+  });
+  IfCtx.current ++;
+  return when ? children : null;
+}
+Vue.ElseIf = ({ when = false, children }) => {
+  let rendered = false;
+  const IfCtx = useContext(IfContext);
+  
+  if(when) {
+    rendered = true;
+  }
+  else {
+    // 一直往上找，找到第一个 If 组件
+    let idx = IfCtx.current - 1;
+    const AboutConditon = [];
+    while(idx >= 0) {
+      AboutConditon.push(IfCtx.queue[idx]);
+      if (IfCtx.queue[idx].type === 'If') {
+        break;
+      }
+      if (IfCtx.queue[idx].type === 'Else') {
+        throw new Error('Else 必须在 ElseIf 组件的后面');
+      }
+      idx --;
+    }
+  }
+
+  return rendered ? children : null;
+}
+Vue.Else = ({ children }) => {
+  return children;
+}
+
 export default Vue;
 
 // 语法糖出现
@@ -217,19 +261,26 @@ export function forwardVue(
   options,
   template
 ) {
-  const Template = forwardRef(template)
+  const Template = forwardRef(({ vm }, ref) => {
+    // 自动绑定 ref，直接传递 vm
+    const $t = template(vm);
+    return React.cloneElement($t, {
+      ref
+    })
+  })
 
   // 便携配置 props
   const defineProps = options.props;
   delete options.props;
 
-  return (props) => (
+  return forwardRef((props, ref) => (
     <Vue
+      ref={ref}
       props={props}
       defineProps={defineProps}
       {...options}
     >
       <Template />
     </Vue>
-  )
+  ))
 }
