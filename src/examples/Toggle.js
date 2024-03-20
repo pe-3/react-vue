@@ -26,7 +26,7 @@ const Toggle = forwardVue(
   (vm) => {
     const { isOn, toggle, isTransition } = vm;
     return (
-      <div ref={ref}>
+      <div>
         <button onClick={toggle} disabled={isTransition}>
           {isOn ? '关' : '开'}
         </button>

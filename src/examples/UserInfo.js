@@ -17,7 +17,7 @@ const UserInfo = forwardVue(
   },
   (vm) => {
     return (
-      <div ref={ref}>
+      <div>
         <input
           placeholder="姓名"
           value={vm.name}
