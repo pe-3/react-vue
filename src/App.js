@@ -1,18 +1,19 @@
 import { forwardVue } from "./Vue";
 import { provide } from './Vue/provider';
 
-import MyInput from "./components/MyInput";
-import Counter from "./components/Couter";
-import ItemList from "./components/ItemList";
-import Toggle from "./components/Toggle";
-import UserInfo from "./components/UserInfo";
-import CheckboxGroup from "./components/CheckboxGroup";
+import MyInput from "./examples/MyInput";
+import Counter from "./examples/Couter";
+import ItemList from "./examples/ItemList";
+import Toggle from "./examples/Toggle";
+import UserInfo from "./examples/UserInfo";
+import CheckboxGroup from "./examples/CheckboxGroup";
 
 const App = forwardVue(
   {
     name: 'App',
     mounted() {
       console.log(this.$children);
+      console.log(this.$refs);
     },
     setup() {
       provide('name', 'zhangsan');

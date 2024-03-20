@@ -149,7 +149,7 @@ const useVueInstance = (option) => {
 
     // life-hook: 卸载
     return () => {
-      stop(); // 卸载时，销毁对 vm 的监听
+      stop && stop(); // 卸载时，销毁对 vm 的监听
       vm.$emit(LifeHooks.unmounted);
     }
   }, [option])
@@ -218,40 +218,91 @@ Vue.slot = ({ name = "default", children, ...args }) => {
 
 Vue.If = ({ when = true, children }) => {
   const IfCtx = useContext(IfContext);
+  if(!IfCtx) {
+    throw new Error('If 组件必须在 Vue 组件中使用')
+  }
+
   IfCtx.queue.push({
     type: 'If',
     when
   });
   IfCtx.current ++;
+
   return when ? children : null;
 }
 Vue.ElseIf = ({ when = false, children }) => {
-  let rendered = false;
   const IfCtx = useContext(IfContext);
-  
-  if(when) {
-    rendered = true;
+  if(!IfCtx) {
+    throw new Error('ElseIf 组件必须在 Vue 组件中使用')
   }
-  else {
-    // 一直往上找，找到第一个 If 组件
-    let idx = IfCtx.current - 1;
-    const AboutConditon = [];
-    while(idx >= 0) {
-      AboutConditon.push(IfCtx.queue[idx]);
-      if (IfCtx.queue[idx].type === 'If') {
-        break;
-      }
-      if (IfCtx.queue[idx].type === 'Else') {
-        throw new Error('Else 必须在 ElseIf 组件的后面');
-      }
-      idx --;
+  if(IfCtx.current === 0) {
+    throw new Error('ElseIf 前面必须有 If 组件');
+  }
+
+  let rendered = false;
+  // 一直往上找，找到第一个 If 组件
+  let idx = IfCtx.current - 1;
+  while(idx >= 0) {
+    // 判断元素为师
+    if (IfCtx.queue[idx].type === 'Else') {
+      throw new Error('Else 必须在 ElseIf 组件的后面');
     }
+    if (IfCtx.queue[idx].when) {
+      rendered = false;
+      break;
+    }
+    if (IfCtx.queue[idx].type === 'If') {
+      rendered = when;
+      break;
+    }
+
+    idx --;
   }
+
+  IfCtx.queue.push({
+    type: 'ElseIf',
+    when
+  })
+  IfCtx.current ++;
 
   return rendered ? children : null;
 }
 Vue.Else = ({ children }) => {
-  return children;
+  const IfCtx = useContext(IfContext);
+  if(!IfCtx) {
+    throw new Error('Else 组件必须在 Vue 组件中使用')
+  }
+  if(IfCtx.current === 0) {
+    throw new Error('Else 前面必须有 If 组件');
+  }
+
+  let rendered = false;
+  // 一直往上找，找到第一个 If 组件
+  let idx = IfCtx.current - 1;
+  while(idx >= 0) {
+    // 判断元素为师
+    if (IfCtx.queue[idx].type === 'Else') {
+      throw new Error('Else 不能在 Else 组件的前面');
+    }
+    if (IfCtx.queue[idx].when) {
+      rendered = false;
+      break;
+    }
+    if (IfCtx.queue[idx].type === 'If') {
+      rendered = true;
+      break;
+    }
+
+    idx --;
+  }
+
+  IfCtx.queue.push({
+    type: 'Else'
+  })
+  IfCtx.current ++;
+
+
+  return rendered ? children : null;
 }
 
 export default Vue;
