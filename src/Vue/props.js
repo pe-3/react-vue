@@ -82,5 +82,11 @@ export default function defineProps(propsConfig = {}, externalProps = {}) {
     }
   });
 
+  // 挂载默认插槽
+  if (attrs.children) {
+    slots["default"] = attrs.children;
+    delete attrs.children;
+  }
+
   return { props: parsedProps, attrs: attrs, events, slots, scopedSlots };
 }

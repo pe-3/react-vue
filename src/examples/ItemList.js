@@ -4,11 +4,13 @@ import { ref } from 'vue';
 const ItemList = forwardVue(
   {
     name: 'ItemList',
-    setup(props) {
-      const items = ref(['苹果', '香蕉', '橙子']);
+    data() {
       return {
-        items
-      };
+        items: ['苹果', '香蕉', '橙子']
+      }
+    },
+    mounted() {
+      console.log(this.$root.$el, 'ItemList mounted');
     }
   },
   (vm) => {

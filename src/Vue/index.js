@@ -11,7 +11,7 @@ import React, {
   useRef
 } from "react";
 
-import { set, omit } from "lodash";
+import { set, omit, isEqualWith } from "lodash";
 
 import defineProps from "./props";
 import Refs from "./refs";
@@ -51,36 +51,41 @@ const useVueInstance = (option) => {
 
   const vm = useMemo(() => {
     const vm = reactive({
-      $data: null, // ok
-      $props: null, // ok
-      $attrs: reactive(attrs), // ok
-      $option: markRaw(option), // ok
+      $data: null,
+      $props: null,
+      $attrs: reactive(attrs),
+      $option: markRaw(option),
 
-      $slots: markRaw(slots), // ok
-      $scopedSlots: markRaw(scopedSlots), // ok
+      $slots: markRaw(slots),
+      $scopedSlots: markRaw(scopedSlots),
 
-      $el: null, // ok
+      $el: null,
 
       // build-vm-tree 去 assing 这些属性
       $root: null,
       $parent: null,
       $children: null,
 
+      $events: null,
+      $emit: null,
+      $on: null,
+      $off: null,
+      $once: null,
+
       $refs: markRaw(new Refs()), // refs 相关逻辑 ok
 
-      $watch: (source, cb, option) => watch(source, cb, option), // ok
-      $set: set, // ok
-      $delete: (source, key) => omit(source, [key]), // ok
+      $watch: (source, cb, option) => watch(source, cb, option), 
+      $set: set, 
+      $delete: (source, key) => omit(source, [key]), 
 
-      $nextTick: () => nextTick(), // ok
-      $forceUpdate: rerender, // ok
+      $nextTick: () => nextTick(), 
+      $forceUpdate: rerender, 
       $mount: () => {
         throw new Error(
           `不能调用 $mount 方法用于挂载，渲染还是基于 react，请走 react 的渲染链路`
         );
       },
 
-      // provide, inject
       provider: markRaw({})
     });
 
@@ -102,7 +107,6 @@ const useVueInstance = (option) => {
       methods: option.methods || {},
       setup: option.setup
     })
-
 
     // life-hook: 挂载前
     nextTick(() => {
@@ -152,7 +156,7 @@ const useVueInstance = (option) => {
       stop && stop(); // 卸载时，销毁对 vm 的监听
       vm.$emit(LifeHooks.unmounted);
     }
-  }, [option])
+  }, [])
 
   // todo: 属性消失或添加做处理
   // 稳定时候的处理 prod 模式下
@@ -320,11 +324,11 @@ export function forwardVue(
     })
   })
 
-  // 便携配置 props
+  // props 配置
   const defineProps = options.props;
   delete options.props;
 
-  return forwardRef((props, ref) => (
+  return React.memo(forwardRef((props, ref) => (
     <Vue
       ref={ref}
       props={props}
@@ -333,5 +337,12 @@ export function forwardVue(
     >
       <Template />
     </Vue>
-  ))
+  )), (oldProps, newProps) => {
+    // 缓存子组件，避免重复渲染
+    return isEqualWith(oldProps, newProps, (oldVal, newVal) => {
+      if (typeof oldVal === 'function' && typeof newVal === 'function' && oldVal.toString() === newVal.toString()) {
+        return true;
+      }
+    })
+  });
 }
