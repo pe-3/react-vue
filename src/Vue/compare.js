@@ -39,7 +39,7 @@ export default function compare(
     }
   });
 
-  changedProps.forEach((key) => {
+  changedProps.forEach(({ key }) => {
     typeof onChange === 'function' && onChange(key);
   });
   addedProps.forEach((key) => {

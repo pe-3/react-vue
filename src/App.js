@@ -41,7 +41,7 @@ const App = forwardVue(
       <div>
         <button onClick={increment}>+</button>
         <span>{ count }</span>
-        <ItemList />
+        <ItemList count={count} />
         <Counter />
         <TestSlot>
           这是默认内容
