@@ -1,51 +1,33 @@
 import Vue, { forwardVue } from "./Vue";
-import { provide } from './Vue/provider';
-
-import MyInput from "./examples/MyInput";
-import Counter from "./examples/Couter";
-import ItemList from "./examples/ItemList";
-import Toggle from "./examples/Toggle";
-import UserInfo from "./examples/UserInfo";
-import CheckboxGroup from "./examples/CheckboxGroup";
-import TestSlot from './examples/TestSlot';
+import { reactive } from "vue";
 
 const App = forwardVue(
   {
     name: 'App',
-    mounted() {
-    },
-    data() {
-      return {
-        count: 0
-      }
-    },
     setup() {
-      provide('name', 'zhangsan');
-    },
-    methods: {
-      increment() {
-        this.count ++;
-      },
-      decrement() {
-        this.count --;
+      const state = reactive({
+        count: 0,
+        disabled: false
+      });
+
+      const increment = () => {
+        state.count++;
+        state.disabled = !state.disabled;
       }
-    },
-    mounted() {
-      console.log(this.$option.name, 'mounted', 'saxsaxasx');
+
+      return {
+        state,
+        increment
+      }
     }
   },
   (vm) => {
-    const { count, increment } = vm;
+    const { state, increment } = vm;
 
     return (
       <div>
+        <h1>{state.count}</h1>
         <button onClick={increment}>+</button>
-        <span>{ count }</span>
-        <ItemList count={count} />
-        <Counter />
-        <TestSlot>
-          这是默认内容
-        </TestSlot>
       </div>
     );
   }
